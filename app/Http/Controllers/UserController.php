@@ -2,12 +2,90 @@
 
 namespace App\Http\Controllers;
 use Illuminate\Http\Request;
+use GuzzleHttp\Client;
 use DB;
 
 use Illuminate\Routing\Controller as BaseController;
 
 class UserController extends BaseController
-{
+{   
+
+
+
+    public function nearby(Request $request)
+
+    {
+
+        // $lat = 52.8120780;
+        // $lng = -2.1480320;
+
+        $lat = $request->input('lat');
+        $lng = $request->input('lng');
+        $radius = $request->input('radius');
+        $location = $lat . ',' . $lng;
+        
+        $type = 'night_club|bar';
+        $apiKey = 'AIzaSyAZCZvl191DIEqcV6p228UHtbu-3mdFL-w';
+
+        $nearbyPlacesUrl = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location='.$location.'&radius='.$radius.'&type='.$type.'&key=' . $apiKey;
+        
+        $client = new Client();
+        $res = $client->request('GET', $nearbyPlacesUrl);
+
+        $result = json_decode($res->getBody());
+        $result = $result->results;
+
+        foreach ($result as $key => $place) {
+            
+            $place_id = $result[$key]->place_id;
+            $name = $result[$key]->name;
+            $vicinity = $result[$key]->vicinity;
+            $rating = (isset($result[$key]->rating) ? $result[$key]->rating : 0);
+            $lat = $result[$key]->geometry->location->lat;
+            $lng = $result[$key]->geometry->location->lng;
+
+            $types = $result[$key]->types;
+            $typeStr = '';
+            foreach ($types as $type) {$typeStr = $typeStr . ',' . $type;}
+            $typeStr = ltrim($typeStr, ',');
+
+            //Attempt to fetch place details from database
+            $dbResult = DB::select('SELECT apiCount as apiCount, active as active FROM places WHERE place_id = ?', [$place_id]);
+
+            if(count($dbResult) == 0){
+                //Insert place into database if it doesnt exist
+                DB::insert('insert into places (place_id,name,vicinity,rating,lat,lng,types) values (?,?,?,?,?,?,?)', array($place_id,$name,$vicinity,$rating,$lat,$lng,$typeStr));
+
+            } else {
+
+                //Update API count
+                $apiCount = $dbResult[0]->apiCount + 1;
+                DB::insert('UPDATE places SET apiCount = ? WHERE place_id = ?', array($apiCount,$place_id));
+                
+                //Set color of map marker
+                $result[$key]->color = 'Amber';
+
+                //Remove place from results if not active in database
+                if($dbResult[0]->active == 0){
+                    unset($result[$key]);
+                }
+            }
+        }
+        echo json_encode($result);
+    }
+
+    public function test(Request $request)
+
+    {
+
+       $placeId = $request->input('placeId');
+        
+        $googleMapsApiURL = 'https://maps.googleapis.com/maps/api/place/details/json?placeid='.$placeId.'&key=AIzaSyAZCZvl191DIEqcV6p228UHtbu-3mdFL-w';
+        $client = new Client();
+        $res = $client->request('GET', $googleMapsApiURL);
+        echo $result = $res->getBody();
+    }
+
     public function login(Request $request)
     {
 
