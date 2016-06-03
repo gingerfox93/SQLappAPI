@@ -71,7 +71,8 @@ class UserController extends BaseController
                 }
             }
         }
-        echo json_encode($result);
+        
+        return \Response::json($result,200);
     }
 
     public function test(Request $request)
