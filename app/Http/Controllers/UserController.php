@@ -49,7 +49,7 @@ class UserController extends BaseController
             $typeStr = ltrim($typeStr, ',');
 
             //Attempt to fetch place details from database
-            $dbResult = DB::select('SELECT apiCount as apiCount, active as active FROM places WHERE place_id = ?', [$place_id]);
+            $dbResult = DB::select('SELECT apiCount as apiCount, COALESCE(active,0) as active FROM places WHERE place_id = ?', [$place_id]);
 
             if(count($dbResult) == 0){
                 //Insert place into database if it doesnt exist
