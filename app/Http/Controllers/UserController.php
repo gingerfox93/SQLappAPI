@@ -61,13 +61,15 @@ class UserController extends BaseController
                 $apiCount = $dbResult[0]->apiCount + 1;
                 DB::insert('UPDATE places SET apiCount = ? WHERE place_id = ?', array($apiCount,$place_id));
                 
-                //Set color of map marker
-                $result[$key]->color = 'Amber';
+               
+            }
 
-                //Remove place from results if not active in database
-                if($dbResult[0]->active == 1){
-                    array_push($output, $place);
-                }
+             //Set color of map marker
+            $result[$key]->color = 'Amber';
+
+            //Remove place from results if not active in database
+            if($dbResult[0]->active == 1){
+                array_push($output, $place);
             }
         }
 
