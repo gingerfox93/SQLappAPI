@@ -19,9 +19,14 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/check-in', 'UserController@checkIn');
+Route::post('/check-in', 'UserController@checkIn');
+
 Route::get('/nearby', 'UserController@nearby');
+
+
 Route::post('/nearby', 'UserController@nearby');
-Route::post('/test', 'UserController@test');
+Route::post('/fetch-place-details', 'UserController@fetchPlaceDetails');
 
 Route::put('/login', 'UserController@login' , ['middleware' => 'cors']);
 Route::put('/register', 'UserController@register' , ['middleware' => 'cors']);
