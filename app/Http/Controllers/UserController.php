@@ -10,8 +10,6 @@ use Illuminate\Routing\Controller as BaseController;
 class UserController extends BaseController
 {   
 
-
-
     public function nearby(Request $request)
 
     {
@@ -75,7 +73,7 @@ class UserController extends BaseController
 
 
         header('Content-Type: application/json');
-        echo '' . json_encode($output) . '';
+        echo json_encode($output);
     }
 
     public function test(Request $request)
