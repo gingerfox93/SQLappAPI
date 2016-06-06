@@ -16,15 +16,12 @@ class UserController extends BaseController
 
     {
 
-        // $lat = 52.8120780;
-        // $lng = -2.1480320;
-
         $lat = $request->input('lat');
         $lng = $request->input('lng');
         $radius = $request->input('radius');
         $location = $lat . ',' . $lng;
         
-        $type = 'night_club|bar';
+        $type = 'night_club|bar|restaurant';
         $apiKey = 'AIzaSyAZCZvl191DIEqcV6p228UHtbu-3mdFL-w';
 
         $nearbyPlacesUrl = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location='.$location.'&radius='.$radius.'&type='.$type.'&key=' . $apiKey;
@@ -34,6 +31,8 @@ class UserController extends BaseController
 
         $result = json_decode($res->getBody());
         $result = $result->results;
+
+        $output = [];
 
         foreach ($result as $key => $place) {
             
@@ -66,13 +65,15 @@ class UserController extends BaseController
                 $result[$key]->color = 'Amber';
 
                 //Remove place from results if not active in database
-                if($dbResult[0]->active == 0){
-                    unset($result[$key]);
+                if($dbResult[0]->active == 1){
+                    array_push($output, $place);
                 }
             }
         }
-        
-        return \Response::json($result,200);
+
+
+        header('Content-Type: application/json');
+        echo '' . json_encode($output) . '';
     }
 
     public function test(Request $request)
