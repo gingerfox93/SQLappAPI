@@ -17,11 +17,7 @@ class UserController extends BaseController
         $userId = $request->input('userId');
         $placeId = $request->input('placeId');
 
-        $userId = 1;
-
-        //$placeId = 'ChIJe-RgsntxekgRHAq2nyYm70s';
-
-        $dbResult = DB::select('DELETE FROM user_places_checked_in WHERE place_id = ? AND user_id = ?', [$placeId,$userId]);
+        $dbResult = DB::insert('DELETE FROM user_places_checked_in WHERE place_id = ? AND user_id = ?', array($placeId,$userId));
 
         $dbResult =  DB::insert(
             'insert into user_places_checked_in (user_id,place_id,dateExpires) 
@@ -29,13 +25,9 @@ class UserController extends BaseController
             array($userId, $placeId)
             );
 
-
         if(count($dbResult) == 0){
             echo 'lol';
         }
-
-        //check if currently checked in
-        //SELECT COUNT(1) FROM user_places_checked_in WHERE place_id = ? AND user_id = ?
         
     }
 
