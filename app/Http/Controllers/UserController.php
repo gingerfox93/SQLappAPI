@@ -39,6 +39,7 @@ class UserController extends BaseController
         $lng = $request->input('lng');
         $userId = $request->input('user_id');
         $radius = $request->input('radius');
+
         $location = $lat . ',' . $lng;
 
         $userId = 1;
@@ -57,8 +58,11 @@ class UserController extends BaseController
 
         $output = [];
 
+        $placeStr = '\'\'';
+
         foreach ($result as $key => $place) {
-            
+
+
             $place_id = $result[$key]->place_id;
             $name = $result[$key]->name;
             $vicinity = $result[$key]->vicinity;
@@ -70,6 +74,11 @@ class UserController extends BaseController
             $typeStr = '';
             foreach ($types as $type) {$typeStr = $typeStr . ',' . $type;}
             $typeStr = ltrim($typeStr, ',');
+
+
+            
+            $placeStr = $placeStr . ',\'' . $place_id. '\'';
+            
 
             //Attempt to fetch place details from database
             $dbResult = DB::select('SELECT COALESCE(active,0) as active FROM places WHERE place_id = ?', [$place_id]);
@@ -83,9 +92,19 @@ class UserController extends BaseController
                 DB::insert('UPDATE places SET apiCount = apiCount + 1 WHERE place_id = ?', array($place_id));
             }
 
+            $tempArray = (object) array(
+                    'source' => 'google',
+                    'place_id' => $result[$key]->place_id,
+                    'name' => $result[$key]->name,
+                    'vicinity' => $result[$key]->vicinity,
+                    'rating' => isset($result[$key]->rating) ? $result[$key]->rating : 0,
+                    'lat' => $result[$key]->geometry->location->lat,
+                    'lng' => $result[$key]->geometry->location->lng,
+                    'color' => 'Blue',
+                );         
+
             //Remove place from results if not active in database
             if(isset($dbResult[0]) && $dbResult[0]->active == 1){
-                array_push($output, $place);
 
                 //Set color of map marker
                 $checkedInResult = DB::select('SELECT COUNT(*) as checkedInCount FROM user_places_checked_in WHERE place_id = ?', [$place_id]);
@@ -93,28 +112,59 @@ class UserController extends BaseController
                 $result[$key]->checkedInCount = $checkedInResult[0]->checkedInCount;
 
                 if($checkedInResult[0]->checkedInCount == 0){
-                    $result[$key]->color = 'Blue';
+                    $tempArray->color = 'Blue';
 
                 } 
 
                 if($checkedInResult[0]->checkedInCount >= 1 && $checkedInResult[0]->checkedInCount < 4){
-                    $result[$key]->color = 'Amber';
+                    $tempArray->color = 'Amber';
                 } 
 
                 if($checkedInResult[0]->checkedInCount >= 4 ){
-                    $result[$key]->color = 'Green';
+                    $tempArray->color = 'Green';
                 } 
 
+                array_push($output, $tempArray);
             } 
 
+
+
             if(!isset($dbResult[0])){
-                array_push($output, $place);
+                array_push($output, $tempArray);
             }
+
+            
+
         }
+
+
+       
+        
+        $radius = ($radius / 1000) - 2; // radius of bounding circle in kilometers
+
+        $placeStr = ltrim($placeStr, ',');
+
+        $dbResult = DB::select("
+            SELECT
+                'db' as source, place_id, name, vicinity, rating, lat, lng, 'Green' as color,
+                ( 6371 * acos( cos( radians({$lat}) ) * cos( radians( `lat` ) ) * cos( radians( `lng` ) - radians({$lng}) ) + sin( radians({$lat}) ) * sin( radians( `lat` ) ) ) ) AS distance
+            FROM `places`
+            WHERE places.active = 1
+            AND place_id NOT IN ({$placeStr})
+            HAVING distance <= {$radius}
+            ORDER BY distance ASC
+            LIMIT 100
+        ");
+
+
+
+        foreach ($dbResult as $place) {
+                array_push($output, $place);
+        }
+
         return \Response::json($output,200);
 
-        // header('Content-Type: application/json');
-        // echo json_encode($output);
+
     }
 
     public function fetchPlaceDetails(Request $request)
