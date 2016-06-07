@@ -17,7 +17,7 @@ class UserController extends BaseController
         $userId = $request->input('userId');
         $placeId = $request->input('placeId');
 
-        //$userId = 1;
+        $userId = 1;
 
         //$placeId = 'ChIJe-RgsntxekgRHAq2nyYm70s';
 
